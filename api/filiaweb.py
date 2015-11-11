@@ -1,7 +1,7 @@
 import os
 import csv
 import psycopg2
-from pandas import DataFrame
+from pandas import DataFrame, isnull
 from io import StringIO
 
 from urllib.parse import urlparse
@@ -27,7 +27,7 @@ def persist_csv_data(file_name, file_text):
         VALUES (%s, %s);""", (file_name, file_text))
     cur.execute(
         """select id from rs.filiaweb_csv
-        where file_name = %s order by created_at DESC limit 1""",
+        where file_name = %s order by created_at DESC limit 1;""",
         (file_name,))
 
     id = cur.fetchone()[0]
@@ -46,30 +46,31 @@ def process_csv_data(id, file_text):
     result = []
 
     for email in data_frame.Email:
-        cur.execute(
-            """ select user_id, status, filiaweb
-            from rs.afiliados where lower(email) = lower(%s)""",
-            (email,))
+        if not isnull(email):
+            print("checking for email --> {}".format(email))
+            cur.execute(
+                """ select user_id, status, filiaweb
+                from rs.afiliados where lower(email) = lower(%s);""",
+                (email,))
 
-        user = cur.fetchone()
+            user = cur.fetchone()
 
-        if user is None:
-            cur.execute(
-                """insert into rs.filiaweb_csv_logs
-                (filiaweb_csv_id, email, found) VALUES
-                (%s,%s,%s)""",(id, email, False))
-            result.append({'email': email, 'found': False})
-        else:
-            cur.execute(
-                """update rs.afiliados
-                set status=3,
-                set filiaweb=true
-                where user_id = %s""", (user[0]))
-            cur.execute(
-                """insert into rs.filiaweb_csv_logs
-                (filiaweb_csv_id, email, found) VALUES
-                (%s,%s,%s)""",(id, email, True))
-            result.append({'email': email, 'found': True})
+            if user is None:
+                cur.execute(
+                    """insert into rs.filiaweb_csv_logs
+                    (filiaweb_csv_id, email, found) VALUES
+                    (%s,%s,%s);""",(id, email, False))
+                result.append({'email': email, 'found': False})
+            else:
+                cur.execute(
+                    """update rs.afiliados
+                    set status = '3', filiaweb = true
+                    where user_id = %s::integer;""", (user[0],))
+                cur.execute(
+                    """insert into rs.filiaweb_csv_logs
+                    (filiaweb_csv_id, email, found) VALUES
+                    (%s,%s,%s);""",(id, email, True))
+                result.append({'email': email, 'found': True})
 
     conn.commit()
     cur.close()
