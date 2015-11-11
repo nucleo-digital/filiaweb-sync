@@ -58,4 +58,6 @@ target/
 
 /example.sqlite
 /.ropeproject
-/.env
+/.envapi/.~lock.csv_test.csv#
+api/.~lock.csv_test.csv#
+.env/
