@@ -54,11 +54,18 @@ def process_csv_data(id, file_text):
         print("checking for email or name --> {}".format(
             name if email is None else email))
 
-        cur.execute(
-            """ select user_id, status, filiaweb
-            from rs.afiliados where lower(email) = lower(%s)
-            or lower(unaccent(nome)) ~* lower(unaccent(%s))""",
-            (email, name))
+        if isnull(email):
+            cur.execute(
+                """ select user_id, status, filiaweb
+                from rs.afiliados where
+                lower(unaccent(nome)) ~* lower(unaccent(%s))""",
+                (name))
+        else:
+            cur.execute(
+                """ select user_id, status, filiaweb
+                from rs.afiliados where lower(email) = lower(%s)
+                or lower(unaccent(nome)) ~* lower(unaccent(%s))""",
+                (email, name))
 
         user = cur.fetchone()
 
