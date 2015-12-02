@@ -59,7 +59,7 @@ def process_csv_data(id, file_text):
                 """ select user_id, status, filiaweb
                 from rs.afiliados where
                 lower(unaccent(nome)) ~* lower(unaccent(%s))""",
-                (name))
+                (name,))
         else:
             cur.execute(
                 """ select user_id, status, filiaweb
