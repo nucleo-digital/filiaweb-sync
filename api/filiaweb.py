@@ -52,7 +52,7 @@ def process_csv_data(id, file_text):
         email = item.Email
 
         print("checking for email or name --> {}".format(
-            name if email is None else email))
+            name if isnull(email) else email))
 
         if isnull(email):
             cur.execute(
